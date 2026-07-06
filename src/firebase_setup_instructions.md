@@ -1,93 +1,97 @@
-# Guia de Configuração do Firebase para JS75: Próxima Fase
+# Guia de Configuração do Firebase (Plano Spark 100% Gratuito, Sem Cartão)
 
-Caso queira migrar o aplicativo para salvar dados na nuvem em tempo real (Firebase), siga este guia passo a passo gratuito.
+Este guia ensina como configurar o banco de dados e a autenticação em nuvem para o aplicativo **JS75: Próxima Fase** usando o plano gratuito do Firebase (Spark), sem a necessidade de adicionar um cartão de crédito.
 
-## 1. Criar Projeto no Firebase
+---
+
+## 1. Criar o Projeto no Firebase
+
 1. Acesse o [Console do Firebase](https://console.firebase.google.com/).
-2. Clique em **Adicionar projeto** e dê um nome (ex: `js75-proxima-fase`).
-3. Ative ou desative o Google Analytics (opcional) e conclua a criação do projeto.
+2. Clique em **Adicionar projeto** (Add project).
+3. Insira o nome do seu projeto (ex: `js75-proxima-fase`).
+4. Ative ou desative o Google Analytics (recomendado desativar para maior rapidez) e conclua a criação.
+
+---
 
 ## 2. Ativar Firebase Authentication (Anônimo)
-1. No menu lateral, acesse **Build > Authentication**.
+
+O login anônimo permite gerar um UID exclusivo e seguro para cada jogador sem exigir senhas ou e-mails, mantendo a privacidade total.
+
+1. No menu lateral esquerdo do Firebase Console, acesse **Build > Authentication** (Construção > Autenticação).
 2. Clique em **Começar** (Get Started).
 3. Vá na aba **Sign-in method** (Método de login).
-4. Clique em **Anônimo** (Anonymous), ative a chave e clique em **Salvar**.
+4. Sob a lista de provedores, clique em **Anônimo** (Anonymous).
+5. Ative a chave de ativação (Status: Ativado) e clique em **Salvar** (Save).
 
-## 3. Criar Firestore Database (Banco de Dados)
+---
+
+## 3. Criar Firestore Database
+
+Usaremos o Firestore para guardar o progresso e o avatar leve comprimido em base64 sob a coleção `players`.
+
 1. No menu lateral, acesse **Build > Firestore Database**.
-2. Clique em **Criar banco de dados**.
-3. Escolha as regras de segurança em **Modo de Produção** ou **Modo de Teste**.
-4. Defina a localização geográfica ideal (ex: `us-east1` ou `southamerica-east1` para o Brasil) e ative.
-5. Em **Regras** (Rules), defina as regras adequadas para permitir leitura e escrita do usuário autenticado:
-   ```javascript
-   rules_version = '2';
-   service cloud.firestore {
-     match /databases/{database}/documents {
-       match /players/{playerId} {
-         allow read, write: if request.auth != null;
-       }
-     }
-   }
-   ```
-
-## 4. Criar Firebase Storage (Armazenamento de Fotos)
-1. No menu lateral, acesse **Build > Storage**.
-2. Clique em **Começar**, defina a localização e conclua.
-3. Altere as regras para permitir fotos de perfil anônimas:
-   ```javascript
-   rules_version = '2';
-   service firebase.storage {
-     match /b/{bucket}/o {
-       match /avatars/{userId} {
-         allow read, write: if request.auth != null;
-       }
-     }
-   }
-   ```
-
-## 5. Configurar `firebaseConfig` no Código
-Crie um arquivo chamado `firebase.js` na raiz da pasta `src/` com suas credenciais obtidas nas configurações do projeto Firebase (ícone de Engrenagem > Configurações do Projeto > Seus Aplicativos > Adicionar Web App):
+2. Clique em **Criar banco de dados** (Create database).
+3. Selecione o **Modo de Produção** (Production Mode) para garantir regras de segurança rígidas.
+4. Escolha a localização geográfica do seu servidor (ex: `southamerica-east1` para o Brasil ou `us-east1` para os EUA) e clique em **Próximo > Ativar**.
+5. Vá na aba **Regras** (Rules) do Firestore Database, copie e cole as regras a seguir para garantir que cada usuário autenticado possa ler e escrever apenas os seus próprios dados:
 
 ```javascript
-import { initializeApp } from "firebase/app";
-import { getAuth, signInAnonymously } from "firebase/auth";
-import { getFirestore, doc, setDoc, getDoc } from "firebase/firestore";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Bloqueio de segurança geral
+    match /{document=**} {
+      allow read, write: if false;
+    }
 
-const firebaseConfig = {
-  apiKey: "SUA_API_KEY",
-  authDomain: "SEU_AUTH_DOMAIN.firebaseapp.com",
-  projectId: "SEU_PROJECT_ID",
-  storageBucket: "SEU_STORAGE_BUCKET.appspot.com",
-  messagingSenderId: "SEU_MESSAGING_SENDER_ID",
-  appId: "SUA_APP_ID"
-};
-
-// Inicializar Firebase
-const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-export const db = getFirestore(app);
-export const storage = getStorage(app);
+    // Cada jogador lê e escreve exclusivamente seu próprio UID
+    match /players/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}
 ```
 
-## 6. Publicar no Firebase Hosting (Gratuito)
-1. Instale a ferramenta CLI do Firebase:
-   ```bash
-   npm install -g firebase-tools
-   ```
-2. Faça login e configure o projeto:
-   ```bash
-   firebase login
-   firebase init
-   ```
-   *Selecione **Hosting** e associe ao projeto criado.*
-   *Defina o diretório público de deploy como `dist`.*
-   *Configure como Single Page Application (SPA): **Yes**.*
-3. Faça o build do projeto React:
-   ```bash
-   npm run build
-   ```
-4. Publique:
-   ```bash
-   firebase deploy
-   ```
+6. Clique em **Publicar** (Publish).
+
+---
+
+## 4. Obter as Credenciais e Configurar Variáveis de Ambiente
+
+Para o app se conectar ao seu banco de dados grátis, obtenha as chaves de API:
+
+1. No painel principal do Firebase, clique no ícone de **Engrenagem** (Configurações do Projeto) > **Configurações do projeto**.
+2. Na aba **Geral**, role até a seção **Seus aplicativos** e clique no ícone **Web (`</>`)**.
+3. Registre o app com um apelido (ex: `js75-web`) e clique em **Registrar app**.
+4. Copie as chaves do objeto `firebaseConfig`:
+
+```javascript
+const firebaseConfig = {
+  apiKey: "AIzaSy...",
+  authDomain: "seu-projeto.firebaseapp.com",
+  projectId: "seu-projeto",
+  storageBucket: "seu-projeto.appspot.com",
+  messagingSenderId: "123456789...",
+  appId: "1:123456789..."
+};
+```
+
+5. No seu ambiente de desenvolvimento, crie ou altere o arquivo `.env` local para definir estas chaves usando o prefixo `VITE_` (usado pelo Vite para segurança no cliente):
+
+```env
+VITE_FIREBASE_API_KEY="SUA_API_KEY"
+VITE_FIREBASE_AUTH_DOMAIN="SEU_AUTH_DOMAIN"
+VITE_FIREBASE_PROJECT_ID="SEU_PROJECT_ID"
+VITE_FIREBASE_STORAGE_BUCKET="SEU_STORAGE_BUCKET"
+VITE_FIREBASE_MESSAGING_SENDER_ID="SEU_MESSAGING_SENDER_ID"
+VITE_FIREBASE_APP_ID="SEU_APP_ID"
+```
+
+---
+
+## 5. Como Funciona a Compressão Automática de Imagem
+
+O aplicativo foi projetado para contornar qualquer limite de armazenamento sem exigir custos:
+* A foto de perfil do jogador (avatar) enviada no upload é imediatamente **redimensionada para no máximo 300x300px** no navegador do cliente usando elementos do HTML5 Canvas.
+* A qualidade é reduzida para **JPEG 0.6**, resultando em uma string Base64 extremamente otimizada (geralmente **entre 10KB e 25KB**).
+* Essa string é salva de forma integrada no documento Firestore do jogador, mantendo o uso de dados e de armazenamento bem abaixo da cota gratuita diária do plano Spark (50.000 leituras e 20.000 escritas diárias).

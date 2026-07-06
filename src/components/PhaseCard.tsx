@@ -89,6 +89,7 @@ export default function PhaseCard({ progress, onUpdateProgress, onAddXP }: Phase
     // Earn Badge & XP
     if (!updated.badges.includes("Primeiro Passo")) {
       updated.badges.push("Primeiro Passo");
+      updated.xp += 100;
       onAddXP(100, "Primeiro Passo");
     }
     
@@ -112,6 +113,7 @@ export default function PhaseCard({ progress, onUpdateProgress, onAddXP }: Phase
     const updated = { ...progress };
     updated.answers.fase2Choice = "respiro";
     updated.phase = 3;
+    updated.xp += 150;
     onAddXP(150);
     onUpdateProgress(updated);
   };
@@ -132,8 +134,10 @@ export default function PhaseCard({ progress, onUpdateProgress, onAddXP }: Phase
     
     if (!updated.badges.includes("Ponte Humana")) {
       updated.badges.push("Ponte Humana");
+      updated.xp += 150;
       onAddXP(150, "Ponte Humana");
     } else {
+      updated.xp += 150;
       onAddXP(150);
     }
     onUpdateProgress(updated);
@@ -163,6 +167,7 @@ export default function PhaseCard({ progress, onUpdateProgress, onAddXP }: Phase
     updated.answers.fase4Answers = fragAnswers;
     updated.fragments = unlockedFrags;
     updated.phase = 5;
+    updated.xp += 200;
     onAddXP(200);
     onUpdateProgress(updated);
   };
@@ -187,7 +192,7 @@ export default function PhaseCard({ progress, onUpdateProgress, onAddXP }: Phase
     // Accept codes following the structural format JS75-XXXX-YYYY or generic JS75-XXXX
     const regex = /^JS75-[A-Z0-9]+-[A-Z0-9]+$/i;
     const fallbackRegex = /^JS75-[A-Z0-9]+$/i;
-    const testCode = regex.test(code) || fallbackRegex.test(code) || code === "VENCER75";
+    const testCode = regex.test(code) || fallbackRegex.test(code);
 
     if (!testCode) {
       setCodeError("Formato de código inválido! Deve ser algo como: JS75-NOM-XXXX");
@@ -207,8 +212,10 @@ export default function PhaseCard({ progress, onUpdateProgress, onAddXP }: Phase
     
     if (!updated.badges.includes("Avanço Compartilhado")) {
       updated.badges.push("Avanço Compartilhado");
+      updated.xp += 200;
       onAddXP(200, "Avanço Compartilhado");
     } else {
+      updated.xp += 200;
       onAddXP(200);
     }
     onUpdateProgress(updated);
@@ -277,6 +284,7 @@ export default function PhaseCard({ progress, onUpdateProgress, onAddXP }: Phase
     const updated = { ...progress };
     updated.answers.fase6QuizAnswers = quizAnswers;
     updated.phase = 7;
+    updated.xp += 250;
     onAddXP(250);
     onUpdateProgress(updated);
   };
@@ -286,6 +294,7 @@ export default function PhaseCard({ progress, onUpdateProgress, onAddXP }: Phase
     const updated = { ...progress };
     updated.presenceConfirmed = true;
     updated.phase = 8;
+    updated.xp += 300;
     onAddXP(300);
     onUpdateProgress(updated);
   };
@@ -294,7 +303,7 @@ export default function PhaseCard({ progress, onUpdateProgress, onAddXP }: Phase
   const handleLiveCodeSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setLiveError("");
-    if (liveCode.trim().toUpperCase() === "VENCER75") {
+    if (liveCode.trim().toUpperCase() === "PROXIMAFASE") {
       setLiveSuccess(true);
     } else {
       setLiveError("Código incorreto. Este código será revelado presencialmente no Encontro JS75 no dia 12/07/26!");
@@ -306,6 +315,7 @@ export default function PhaseCard({ progress, onUpdateProgress, onAddXP }: Phase
     
     if (!updated.badges.includes("Vencedor JS75")) {
       updated.badges.push("Vencedor JS75");
+      updated.xp += 500;
       onAddXP(500, "Vencedor JS75");
     }
     
@@ -1073,9 +1083,6 @@ export default function PhaseCard({ progress, onUpdateProgress, onAddXP }: Phase
                     <h4 className="text-base font-sans font-bold text-white">
                       Digite o código revelado no encontro para desbloquear a fase final.
                     </h4>
-                    <p className="text-xs text-gray-400 leading-relaxed max-w-md mx-auto font-mono">
-                      (Dica: Para fins de teste/visita antecipada, use o código secreto citado na instrução: <span className="text-cyan-400 font-bold">VENCER75</span>)
-                    </p>
                   </div>
 
                   <form onSubmit={handleLiveCodeSubmit} className="max-w-md mx-auto space-y-4">
@@ -1091,7 +1098,7 @@ export default function PhaseCard({ progress, onUpdateProgress, onAddXP }: Phase
                           setLiveCode(e.target.value);
                           setLiveError("");
                         }}
-                        placeholder="Digite VENCER75..."
+                        placeholder="CÓDIGO DE ATIVAÇÃO..."
                         className="block w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-center text-lg font-mono text-white tracking-widest uppercase placeholder-gray-700 focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
                       />
                     </div>
@@ -1121,11 +1128,13 @@ export default function PhaseCard({ progress, onUpdateProgress, onAddXP }: Phase
                     <span className="text-3xl animate-bounce block">🏆</span>
                     
                     <h3 className="text-2xl font-sans font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-purple-400 to-indigo-300">
-                      Jornada Concluída! Você é Vencedor!
+                      🔓 Fase Final Desbloqueada
                     </h3>
 
                     <p className="text-sm text-slate-200 font-sans max-w-lg mx-auto leading-relaxed">
-                      “Você chegou até aqui. A verdadeira vitória não é nunca perder. É continuar avançando com coragem, amizade e propósito.”
+                      Você descobriu que a próxima fase nunca esteve no aplicativo.
+                      <br />
+                      Ela sempre esteve dentro de você.
                     </p>
 
                     <div className="inline-flex items-center space-x-2 bg-purple-500/10 border border-purple-500/30 px-4 py-1.5 rounded-full text-xs font-mono text-purple-300">

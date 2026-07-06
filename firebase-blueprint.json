@@ -1,0 +1,73 @@
+{
+  "entities": {
+    "PlayerProgress": {
+      "title": "PlayerProgress",
+      "description": "Represents the active progress, XP, answers, and badges of a player.",
+      "type": "object",
+      "properties": {
+        "username": {
+          "type": "string",
+          "description": "The unique nickname chosen by the user."
+        },
+        "avatar": {
+          "type": "string",
+          "description": "Browser-compressed Base64 string of the avatar, or standard preset emoji."
+        },
+        "phase": {
+          "type": "integer",
+          "description": "Current active phase level (1 to 8)."
+        },
+        "xp": {
+          "type": "integer",
+          "description": "The accumulated Experience Points of the player."
+        },
+        "badges": {
+          "type": "array",
+          "description": "List of string identifiers for earned badges."
+        },
+        "answers": {
+          "type": "object",
+          "description": "Map containing choice responses to phases 1, 2, 3, 4, and 6."
+        },
+        "fragments": {
+          "type": "array",
+          "description": "Array of indices representing unlocked fragment parts."
+        },
+        "presenceConfirmed": {
+          "type": "boolean",
+          "description": "Flag showing whether presence has been confirmed at the venue."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when player registered."
+        },
+        "lastAccess": {
+          "type": "string",
+          "description": "Timestamp of the last sync operation."
+        },
+        "friendCode": {
+          "type": "string",
+          "description": "A unique, random social code for networking."
+        },
+        "connectedFriendCodes": {
+          "type": "array",
+          "description": "List of friend codes connected by the user."
+        }
+      },
+      "required": [
+        "username",
+        "phase",
+        "xp",
+        "badges",
+        "presenceConfirmed",
+        "friendCode"
+      ]
+    }
+  },
+  "firestore": {
+    "/players/{userId}": {
+      "schema": "PlayerProgress",
+      "description": "Saves the player progress, indexed by the user's anonymous Firebase Authentication UID."
+    }
+  }
+}

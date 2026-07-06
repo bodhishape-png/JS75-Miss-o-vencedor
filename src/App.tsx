@@ -10,6 +10,12 @@ import GameMap from "./components/GameMap";
 import PhaseCard from "./components/PhaseCard";
 import Profile from "./components/Profile";
 import FinalUnlock from "./components/FinalUnlock";
+import { 
+  isFirebaseConfigured, 
+  loginAnonymously, 
+  loadPlayerFromFirestore, 
+  savePlayerToFirestore 
+} from "./firebase";
 
 export default function App() {
   const [progress, setProgress] = useState<PlayerProgress | null>(null);
@@ -17,6 +23,8 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<"map" | "profile" | "instructions">("map");
   const [selectedMapPhaseId, setSelectedMapPhaseId] = useState<number>(1);
   const [isExpired, setIsExpired] = useState<boolean>(false);
+  const [firebaseUid, setFirebaseUid] = useState<string | null>(null);
+  const [isSyncing, setIsSyncing] = useState<boolean>(false);
 
   // New badge / XP Toast notification state
   const [toast, setToast] = useState<{
@@ -28,6 +36,7 @@ export default function App() {
 
   // Load progress and check temporal bounds (Active only until 14/07/2026)
   useEffect(() => {
+    // 1. Instant offline load from local storage
     const loaded = loadProgress();
     if (loaded) {
       setProgress(loaded);
@@ -40,17 +49,63 @@ export default function App() {
     if (now > expirationDate) {
       setIsExpired(true);
     }
+
+    // 2. Async synchronization with Firestore (free, no credit card)
+    async function syncFirestore() {
+      if (!isFirebaseConfigured) {
+        console.warn("Firebase não configurado nas variáveis de ambiente (.env). Operando localmente.");
+        return;
+      }
+      setIsSyncing(true);
+      try {
+        const user = await loginAnonymously();
+        if (user) {
+          setFirebaseUid(user.uid);
+          
+          // Pull source of truth from Firestore
+          const cloudProgress = await loadPlayerFromFirestore(user.uid);
+          if (cloudProgress) {
+            setProgress(cloudProgress);
+            saveProgress(cloudProgress); // keep local storage cache in sync
+            setSelectedMapPhaseId(cloudProgress.phase);
+            triggerToast("Progresso sincronizado com a nuvem!");
+          } else {
+            // New cloud account, migrate existing local progress if any
+            const localProgress = loadProgress();
+            if (localProgress) {
+              await savePlayerToFirestore(user.uid, localProgress);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("Falha na sincronização inicial do Firestore (operando em modo offline/localStorage):", err);
+        // Fallback is already loaded from localStorage, app remains operational
+      } finally {
+        setIsSyncing(false);
+      }
+    }
+
+    syncFirestore();
   }, []);
 
   // Handle manual/automatic save
-  const handleUpdateProgress = (updated: PlayerProgress) => {
+  const handleUpdateProgress = async (updated: PlayerProgress) => {
     setProgress(updated);
     saveProgress(updated);
     setSelectedMapPhaseId(updated.phase);
+
+    // Persist to Cloud in background
+    if (firebaseUid) {
+      try {
+        await savePlayerToFirestore(firebaseUid, updated);
+      } catch (err) {
+        console.warn("Erro ao salvar progresso em nuvem (salvando localmente):", err);
+      }
+    }
   };
 
   // Login handler
-  const handleLoginSuccess = (newProgress: PlayerProgress) => {
+  const handleLoginSuccess = async (newProgress: PlayerProgress) => {
     setProgress(newProgress);
     saveProgress(newProgress);
     setHasStarted(true);
@@ -58,15 +113,19 @@ export default function App() {
     
     // Award first entry XP toast
     triggerToast("Identidade sincronizada com a rede!", undefined, 50);
+
+    // Persist to Cloud in background
+    if (firebaseUid) {
+      try {
+        await savePlayerToFirestore(firebaseUid, newProgress);
+      } catch (err) {
+        console.warn("Erro ao registrar jogador em nuvem (salvando localmente):", err);
+      }
+    }
   };
 
-  // XP addition utility with toast callback
+  // XP addition utility with toast callback (now triggers the toast notification while PhaseCard handles single progress state updates)
   const handleAddXP = (amount: number, badgeTitle?: string) => {
-    if (!progress) return;
-    const updated = { ...progress };
-    updated.xp += amount;
-    
-    handleUpdateProgress(updated);
     triggerToast(
       badgeTitle ? `Novo badge conquistado: ${badgeTitle}!` : `Você ganhou +${amount} XP!`,
       badgeTitle,
@@ -394,11 +453,18 @@ export default function App() {
                 setProgress(null);
                 setHasStarted(false);
               }}
-              onImportProgress={(imported) => {
+              onImportProgress={async (imported) => {
                 setProgress(imported);
                 saveProgress(imported);
                 setSelectedMapPhaseId(imported.phase);
                 triggerToast("Progresso restaurado com sucesso!", undefined, 100);
+                if (firebaseUid) {
+                  try {
+                    await savePlayerToFirestore(firebaseUid, imported);
+                  } catch (err) {
+                    console.warn("Erro ao salvar progresso importado no Firestore (salvando localmente):", err);
+                  }
+                }
               }}
             />
           </div>

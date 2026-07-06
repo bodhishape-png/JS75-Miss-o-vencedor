@@ -4,6 +4,7 @@ import {
 } from "lucide-react";
 import { INITIAL_PROGRESS, importProgressFromCode } from "../utils/gameHelpers";
 import { PlayerProgress } from "../types";
+import { compressAvatar } from "../utils/imageCompressor";
 
 interface LoginProps {
   onLoginSuccess: (progress: PlayerProgress) => void;
@@ -26,15 +27,18 @@ export default function Login({ onLoginSuccess }: LoginProps) {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 800000) { // Limit size to ~800KB for localStorage safety
-        setError("Imagem muito grande! Escolha uma imagem de até 800KB.");
-        return;
-      }
       setError("");
       const reader = new FileReader();
-      reader.onload = (event) => {
+      reader.onload = async (event) => {
         if (event.target?.result) {
-          setAvatar(event.target.result as string);
+          const rawBase64 = event.target.result as string;
+          try {
+            const compressed = await compressAvatar(rawBase64);
+            setAvatar(compressed);
+          } catch (err) {
+            console.error("Erro ao comprimir imagem:", err);
+            setAvatar(rawBase64); // Fallback
+          }
         }
       };
       reader.readAsDataURL(file);
