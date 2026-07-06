@@ -1,0 +1,6 @@
+{
+  "name": "JS75: Próxima Fase",
+  "description": "Um jogo-convite interativo para o Encontro de Jovens das RMs PE Norte e Sul. Supere os desafios, ganhe XP, conquiste badges e prepare-se para a próxima fase presencial!",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
